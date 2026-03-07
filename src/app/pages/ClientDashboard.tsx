@@ -107,12 +107,12 @@ export function ClientDashboard() {
 
     const form = e.target as HTMLFormElement;
     const formData = {
-  title: form.title.value,
-  description: form.description.value,
-  location: form.location.value,
-  budget: form.pay.value,
-  duration: form.duration.value,
-  job_date: form.date.value
+  title: (form.querySelector('input[name="title"]') as HTMLInputElement).value,
+  description: (form.querySelector('textarea[name="description"]') as HTMLTextAreaElement).value,
+  location: (form.querySelector('input[name="location"]') as HTMLInputElement).value,
+  budget: (form.querySelector('input[name="pay"]') as HTMLInputElement).value,
+  duration: (form.querySelector('input[name="duration"]') as HTMLInputElement).value,
+  job_date: (form.querySelector('input[name="date"]') as HTMLInputElement).value
 };
     await fetch(`${API}/gigs`, {
   method: "POST",
