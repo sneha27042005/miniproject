@@ -4,14 +4,15 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-  "dev": "vite",
-  "build": "vite build",
-  "preview": "vite preview"
-},
-
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
   "dependencies": {
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
+    "@googlemaps/js-api-loader": "^2.0.2",
+    "@googlemaps/react-wrapper": "^1.2.0",
     "@mui/icons-material": "7.3.5",
     "@mui/material": "7.3.5",
     "@popperjs/core": "2.11.8",
@@ -54,9 +55,9 @@
     "react-day-picker": "8.10.1",
     "react-dnd": "16.0.1",
     "react-dnd-html5-backend": "16.0.1",
+    "react-google-places-autocomplete": "^4.1.0",
     "react-hook-form": "7.55.0",
-    "react-leaflet": "4.2.1",
-
+    "react-leaflet": "^4.2.1",
     "react-popper": "2.3.0",
     "react-resizable-panels": "2.1.7",
     "react-responsive-masonry": "2.7.1",
@@ -70,13 +71,16 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.1.12",
+    "@types/leaflet": "^1.9.21",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "4.7.0",
     "tailwindcss": "4.1.12",
     "vite": "6.3.5"
   },
   "peerDependencies": {
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "peerDependenciesMeta": {
     "react": {

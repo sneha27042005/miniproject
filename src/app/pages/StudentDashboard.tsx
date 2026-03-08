@@ -1,266 +1,802 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import {
-  Users,
-  LogOut
+  Home,
+  LogOut,
+  MapPin,
+  Calendar,
+  Search,
+  Trash2,
+  Bell,
+  Briefcase,
+  FileText,
+  User,
+  CheckCircle
 } from "lucide-react";
-
-interface Job {
-  id: string;
-  title: string;
-  description: string;
-  budget: number;
-  latitude: number;
-  longitude: number;
-}
-
-interface Application {
-  application_id: string;
-  gig_id: string;
-  title: string;
-  application_status: string;
-}
+import API from "../../api";
 
 export function StudentDashboard() {
-  const navigate = useNavigate();
 
-  const [user, setUser] = useState<any>(null);
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [activeTab, setActiveTab] = useState<"jobs" | "applications">("jobs");
+const navigate = useNavigate();
 
-  // ================= PROTECT ROUTE =================
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
+const [activeTab,setActiveTab] =
+useState<"jobs"|"applications"|"work"|"profile">("jobs");
 
-    if (!token) {
-      navigate("/student");
-      return;
-    }
+const [jobs,setJobs] = useState<any[]>([]);
+const [filteredJobs,setFilteredJobs] = useState<any[]>([]);
+const [applications,setApplications] = useState<any[]>([]);
+const [profile,setProfile] = useState<any>(null);
 
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+const [search,setSearch] = useState("");
 
-    fetchJobs();
-    fetchApplications();
+const [stats,setStats] = useState({
+total:0,
+accepted:0,
+completed:0
+});
 
-    // 🔥 Auto refresh every 10 sec (Feature 6 & 9)
-    const interval = setInterval(() => {
-      fetchApplications();
-    }, 10000);
+const [earnings,setEarnings] = useState(0);
+const [reviewJob,setReviewJob] = useState<any>(null)
+const [reportJob,setReportJob] = useState<any>(null)
 
-    return () => clearInterval(interval);
+const [rating,setRating] = useState(5)
+const [comment,setComment] = useState("")
+const [reportReason,setReportReason] = useState("")
 
-  }, []);
+/* LOAD DATA */
 
-  // ================= FETCH JOBS =================
-  const fetchJobs = async () => {
-    try {
-      const res = await fetch("http://localhost:5000/api/gigs");
-      const data = await res.json();
+useEffect(()=>{
+fetchJobs();
+fetchApplications();
+fetchProfile();
+},[]);
 
-      // Feature 7: Nearby filter (within ~5km)
-      const nearbyJobs = data.filter((gig: any) => {
-        if (!gig.latitude || !gig.longitude) return true;
+/* ================= JOBS ================= */
 
-        const userLat = 10; // Replace with real GPS later
-        const userLng = 76;
+const fetchJobs = async()=>{
 
-        const distance = getDistance(
-          userLat,
-          userLng,
-          gig.latitude,
-          gig.longitude
-        );
+try{
 
-        return distance <= 5;
-      });
+const res = await fetch(`${API}/gigs`);
+const data = await res.json();
 
-      setJobs(nearbyJobs);
+const list = Array.isArray(data) ? data : [];
 
-    } catch (err) {
-      console.log("Error loading jobs");
-    }
-  };
+setJobs(list);
+setFilteredJobs(list);
 
-  // ================= FETCH APPLICATIONS =================
-  const fetchApplications = async () => {
-    try {
-      const token = localStorage.getItem("token");
+}catch(err){
+console.log(err);
+}
 
-      const res = await fetch(
-        "http://localhost:5000/api/applications/my",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+};
 
-      const data = await res.json();
-      setApplications(data);
+const searchJobs = ()=>{
 
-    } catch (err) {
-      console.log("Error loading applications");
-    }
-  };
+const results = jobs.filter((job:any)=>
+job.location?.toLowerCase().includes(search.toLowerCase())
+);
 
-  // ================= APPLY =================
-  const handleApply = async (gigId: string) => {
-    try {
-      const token = localStorage.getItem("token");
+setFilteredJobs(results);
 
-      const res = await fetch(
-        `http://localhost:5000/api/applications/apply/${gigId}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+};
 
-      const data = await res.json();
+const applyJob = async(id:number)=>{
 
-      if (!res.ok) {
-        alert(data.message);
-        return;
-      }
+try{
 
-      alert("Applied successfully!");
+const res = await fetch(`${API}/applications/apply/${id}`,{
+method:"POST",
+headers:{
+Authorization:`Bearer ${localStorage.getItem("token")}`
+}
+});
 
-      // Feature 5: Auto refresh after apply
-      fetchApplications();
+const data = await res.json();
 
-    } catch (err) {
-      alert("Error applying");
-    }
-  };
+alert(data.message);
 
-  // ================= DISTANCE CALC =================
-  const getDistance = (
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number
-  ) => {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
+fetchApplications();
 
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) *
-      Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+}catch(err){
+console.log(err);
+}
 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
+};
 
-  // ================= CHECK IF ALREADY APPLIED =================
-  const hasApplied = (gigId: string) => {
-    return applications.some(app => app.gig_id === gigId);
-  };
 
-  const getStatusColor = (status: string) => {
-    if (status === "applied") return "text-blue-600";
-    if (status === "accepted") return "text-green-600";
-    if (status === "in_progress") return "text-yellow-600";
-    if (status === "completed") return "text-gray-600";
-    return "";
-  };
+/* ================= APPLICATIONS ================= */
 
-  return (
-    <div className="min-h-screen bg-gray-50">
+const fetchApplications = async()=>{
 
-      {/* HEADER */}
-      <header className="bg-white border-b px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <Users className="w-6 h-6 text-blue-600" />
-          <h1 className="text-xl font-semibold">LocalGig</h1>
-        </div>
+try{
 
-        <div className="flex items-center gap-4">
-          <div>
-            <div className="text-sm font-medium">{user?.name}</div>
-            <div className="text-xs text-gray-500">{user?.email}</div>
-          </div>
-          <button
-            onClick={() => {
-              localStorage.clear();
-              navigate("/");
-            }}
-          >
-            <LogOut className="w-5 h-5 text-gray-600" />
-          </button>
-        </div>
-      </header>
+const res = await fetch(`${API}/applications/my`,{
+headers:{
+Authorization:`Bearer ${localStorage.getItem("token")}`
+}
+});
 
-      <div className="p-6">
+const data = await res.json();
 
-        {/* TABS */}
-        <div className="flex gap-4 mb-6">
-          <button
-            onClick={() => setActiveTab("jobs")}
-            className="px-4 py-2 bg-blue-600 text-white rounded"
-          >
-            Jobs
-          </button>
+const apps = Array.isArray(data) ? data : [];
 
-          <button
-            onClick={() => setActiveTab("applications")}
-            className="px-4 py-2 bg-gray-200 rounded"
-          >
-            Applications
-          </button>
-        </div>
+setApplications(apps);
 
-        {/* JOBS */}
-        {activeTab === "jobs" && (
-          <div className="space-y-4">
-            {jobs.map(job => (
-              <div key={job.id} className="bg-white p-4 rounded shadow">
-                <h3 className="text-lg font-semibold">{job.title}</h3>
-                <p className="text-gray-600">{job.description}</p>
-                <p className="text-blue-600 font-bold">₹{job.budget}</p>
+/* STATS */
 
-                {/* Feature 4 & 8 */}
-                {hasApplied(job.id) ? (
-                  <span className="text-green-600 font-medium">
-                    Already Applied
-                  </span>
-                ) : (
-                  <button
-                    onClick={() => handleApply(job.id)}
-                    className="mt-2 px-4 py-2 bg-blue-600 text-white rounded"
-                  >
-                    Apply
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+const total = apps.length;
+const accepted = apps.filter((a:any)=>a.application_status==="accepted").length;
+const completed = apps.filter((a:any)=>a.gig_status==="completed").length;
 
-        {/* APPLICATIONS */}
-        {activeTab === "applications" && (
-          <div className="space-y-4">
-            {applications.map(app => (
-              <div key={app.application_id} className="bg-white p-4 rounded shadow">
-                <h3 className="font-semibold">{app.title}</h3>
-                <p className={getStatusColor(app.application_status)}>
-                  {app.application_status}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
+setStats({total,accepted,completed});
 
-      </div>
-    </div>
-  );
+/* EARNINGS */
+
+let earned = 0;
+
+apps.forEach((a:any)=>{
+if(a.check_out_time){
+earned += Number(a.budget);
+}
+});
+
+setEarnings(earned);
+
+}catch(err){
+
+console.log(err);
+setApplications([]);
+
+}
+
+};
+
+const cancelApplication = async(id:number)=>{
+
+if(!window.confirm("Cancel this application?")) return;
+
+const res = await fetch(`${API}/applications/cancel/${id}`,{
+method:"PUT",
+headers:{
+Authorization:`Bearer ${localStorage.getItem("token")}`
+}
+});
+
+const data = await res.json();
+
+alert(data.message);
+
+fetchApplications();
+
+};
+
+
+/* ================= WORKFLOW ================= */
+
+const checkIn = async(id:number)=>{
+
+await fetch(`${API}/applications/checkin/${id}`,{
+method:"PUT",
+headers:{
+Authorization:`Bearer ${localStorage.getItem("token")}`
+}
+});
+
+fetchApplications();
+
+};
+
+const checkOut = async(id:number)=>{
+
+await fetch(`${API}/applications/checkout/${id}`,{
+method:"PUT",
+headers:{
+Authorization:`Bearer ${localStorage.getItem("token")}`
+}
+});
+
+fetchApplications();
+
+};
+
+
+/* ================= PROFILE ================= */
+
+const fetchProfile = async()=>{
+
+const res = await fetch(`${API}/users/me`,{
+headers:{
+Authorization:`Bearer ${localStorage.getItem("token")}`
+}
+});
+
+const data = await res.json();
+
+setProfile(data);
+
+};
+
+const updateProfile = async(e:any)=>{
+
+e.preventDefault();
+
+await fetch(`${API}/users/me`,{
+method:"PUT",
+headers:{
+"Content-Type":"application/json",
+Authorization:`Bearer ${localStorage.getItem("token")}`
+},
+body:JSON.stringify(profile)
+});
+
+alert("Profile updated");
+
+};
+
+
+/* ================= STATUS BADGE ================= */
+
+const badgeColor = (status:string)=>{
+
+if(status==="accepted") return "bg-green-100 text-green-700";
+if(status==="rejected") return "bg-red-100 text-red-700";
+if(status==="cancelled") return "bg-gray-200 text-gray-700";
+
+return "bg-yellow-100 text-yellow-700";
+
+};
+
+
+/* ================= DIRECTIONS ================= */
+
+const getDirections = (location:string)=>{
+
+navigator.geolocation.getCurrentPosition((pos)=>{
+
+const lat = pos.coords.latitude;
+const lng = pos.coords.longitude;
+
+const url =
+`https://www.google.com/maps/dir/${lat},${lng}/${encodeURIComponent(location)}`;
+
+window.open(url,"_blank");
+
+});
+
+
+};
+
+/* OPEN REVIEW */
+
+const openReview = (job:any)=>{
+setReviewJob(job)
+}
+
+/* SUBMIT REVIEW */
+
+const submitReview = async()=>{
+
+await fetch(`${API}/reviews`,{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+Authorization:`Bearer ${localStorage.getItem("token")}`
+},
+body:JSON.stringify({
+reviewee_id: reviewJob.client_id,
+rating,
+comment
+})
+})
+
+alert("Review submitted")
+
+setReviewJob(null)
+setRating(5)
+setComment("")
+}
+
+/* OPEN REPORT */
+
+const openReport = (job:any)=>{
+setReportJob(job)
+}
+
+/* SUBMIT REPORT */
+
+const submitReport = async()=>{
+
+await fetch(`${API}/reports`,{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+Authorization:`Bearer ${localStorage.getItem("token")}`
+},
+body:JSON.stringify({
+reported_user_id: reportJob.client_id,
+reason: reportReason
+})
+})
+
+alert("Report submitted")
+
+setReportJob(null)
+setReportReason("")
+}
+
+
+
+/* ================= UI ================= */
+
+return(
+
+<div className="min-h-screen bg-gray-100 flex">
+
+{/* SIDEBAR */}
+
+<div className="w-64 bg-white border-r p-6">
+
+<h1 className="text-xl font-semibold mb-8">
+LocalGig
+</h1>
+
+<div className="space-y-4">
+
+<button
+onClick={()=>setActiveTab("jobs")}
+className={`flex items-center gap-2 w-full p-2 rounded ${
+activeTab==="jobs" ? "bg-green-100 text-green-700":""
+}`}
+>
+<Briefcase size={18}/>
+Nearby Jobs
+</button>
+
+<button
+onClick={()=>setActiveTab("applications")}
+className={`flex items-center gap-2 w-full p-2 rounded ${
+activeTab==="applications" ? "bg-green-100 text-green-700":""
+}`}
+>
+<FileText size={18}/>
+Applications
+</button>
+
+<button
+onClick={()=>setActiveTab("work")}
+className={`flex items-center gap-2 w-full p-2 rounded ${
+activeTab==="work" ? "bg-green-100 text-green-700":""
+}`}
+>
+<CheckCircle size={18}/>
+My Work
+</button>
+
+<button
+onClick={()=>setActiveTab("profile")}
+className={`flex items-center gap-2 w-full p-2 rounded ${
+activeTab==="profile" ? "bg-green-100 text-green-700":""
+}`}
+>
+<User size={18}/>
+Profile
+</button>
+
+</div>
+
+</div>
+
+
+
+
+{/* MAIN */}
+
+<div className="flex-1 flex flex-col">
+
+{/* NAVBAR */}
+
+<div className="bg-white border-b px-8 py-4 flex justify-between">
+
+<h2 className="font-semibold text-lg">
+Student Dashboard
+</h2>
+
+<div className="flex items-center gap-6">
+
+<div className="relative">
+<Bell size={20}/>
+<span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1 rounded">
+{applications.length}
+</span>
+</div>
+
+{profile &&(
+
+<div className="text-right">
+
+<p className="font-medium">{profile.name}</p>
+<p className="text-xs text-gray-500">{profile.email}</p>
+
+</div>
+
+)}
+
+<button onClick={()=>navigate("/")}>
+<Home/>
+</button>
+
+<button onClick={()=>{
+localStorage.clear();
+navigate("/");
+}}>
+<LogOut/>
+</button>
+
+</div>
+
+</div>
+
+
+<div className="p-8 flex-1 overflow-auto">
+  {/* DASHBOARD STATS */}
+
+<div className="grid md:grid-cols-4 gap-6 mb-8">
+
+<div className="bg-white shadow p-6 rounded-xl">
+<h3 className="text-sm text-gray-500">Total Applications</h3>
+<p className="text-2xl font-bold">{stats.total}</p>
+</div>
+
+<div className="bg-white shadow p-6 rounded-xl">
+<h3 className="text-sm text-gray-500">Accepted Jobs</h3>
+<p className="text-2xl font-bold text-green-600">
+{stats.accepted}
+</p>
+</div>
+
+<div className="bg-white shadow p-6 rounded-xl">
+<h3 className="text-sm text-gray-500">Completed Jobs</h3>
+<p className="text-2xl font-bold text-blue-600">
+{stats.completed}
+</p>
+</div>
+
+<div className="bg-white shadow p-6 rounded-xl">
+<h3 className="text-sm text-gray-500">Total Earnings</h3>
+<p className="text-2xl font-bold text-green-700">
+₹{earnings}
+</p>
+</div>
+
+</div>
+
+
+{/* JOBS TAB */}
+
+{activeTab==="jobs" &&(
+
+<div>
+
+<div className="flex gap-3 mb-6">
+
+<input
+value={search}
+onChange={(e)=>setSearch(e.target.value)}
+placeholder="Search jobs by location"
+className="border p-3 rounded w-full"
+/>
+
+<button
+onClick={searchJobs}
+className="bg-green-600 text-white px-4 rounded flex items-center gap-1"
+>
+<Search size={16}/> Search
+</button>
+
+</div>
+
+<div className="grid md:grid-cols-2 gap-6">
+
+{filteredJobs.map(job=>(
+
+<div key={job.id}
+className="bg-white p-6 rounded-xl shadow border">
+
+<h3 className="text-lg font-semibold mb-1">
+{job.title}
+</h3>
+
+<p className="text-gray-600 mb-3">
+{job.description}
+</p>
+
+<div className="flex gap-6 text-sm mb-2">
+
+<span className="flex items-center gap-1">
+<MapPin size={16}/>
+{job.location}
+</span>
+
+<span className="flex items-center gap-1">
+<Calendar size={16}/>
+{job.job_date}
+</span>
+
+</div>
+
+<div className="font-semibold text-green-600">
+₹{job.budget}
+</div>
+
+<button
+onClick={()=>applyJob(job.id)}
+className="mt-4 bg-blue-600 text-white px-4 py-2 rounded"
+>
+Apply
+</button>
+
+</div>
+
+))}
+
+</div>
+
+</div>
+
+)}
+
+
+
+{/* APPLICATIONS TAB */}
+
+{activeTab==="applications" &&(
+
+<div className="space-y-4">
+
+{applications.map(app=>(
+
+<div key={app.application_id}
+className="bg-white p-5 rounded-xl shadow border flex justify-between items-center">
+
+<div>
+
+<h3 className="font-semibold">
+{app.title}
+</h3>
+
+<div className="flex gap-3 mt-1">
+
+<span className={`px-2 py-1 text-xs rounded ${badgeColor(app.application_status)}`}>
+{app.application_status}
+</span>
+
+<span className="text-sm text-gray-500">
+₹{app.budget}
+</span>
+
+</div>
+
+</div>
+
+<div className="flex gap-3">
+
+<button
+onClick={()=>getDirections(app.location)}
+className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
+>
+Directions
+</button>
+
+<button
+onClick={()=>cancelApplication(app.application_id)}
+className="text-red-500"
+>
+<Trash2/>
+</button>
+
+</div>
+
+</div>
+
+))}
+
+</div>
+
+)}
+
+
+{/* WORK TAB */}
+
+{activeTab==="work" &&(
+
+<div className="space-y-4">
+
+{applications
+.filter(app=>app.application_status==="accepted")
+.map(app=>(
+
+<div key={app.application_id}
+className="bg-white p-5 rounded-xl shadow border flex justify-between items-center">
+
+<div>
+
+<h3 className="font-semibold">
+{app.title}
+</h3>
+
+<p className="text-sm text-gray-500">
+₹{app.budget}
+</p>
+
+</div>
+
+<div className="flex gap-3">
+
+{/* NOT CHECKED IN YET */}
+
+{!app.check_in_time && (
+
+<button
+onClick={()=>checkIn(app.application_id)}
+className="bg-green-600 text-white px-4 py-2 rounded"
+>
+Check In
+</button>
+
+)}
+
+{/* CHECKED IN BUT NOT CHECKED OUT */}
+
+{app.check_in_time && !app.check_out_time && (
+
+<button
+onClick={()=>checkOut(app.application_id)}
+className="bg-red-600 text-white px-4 py-2 rounded"
+>
+Check Out
+</button>
+
+)}
+
+{/* JOB COMPLETED */}
+
+{app.check_out_time && (
+
+<div className="flex items-center gap-3">
+
+<span className="text-green-600 font-semibold flex items-center gap-1">
+<CheckCircle size={18}/> Completed
+</span>
+
+<button
+onClick={()=>openReview(app)}
+className="bg-purple-600 text-white px-3 py-1 rounded text-sm"
+>
+Review
+</button>
+
+<button
+onClick={()=>openReport(app)}
+className="bg-red-600 text-white px-3 py-1 rounded text-sm"
+>
+Report
+</button>
+
+</div>
+
+)}
+
+</div>
+
+</div>
+
+))}
+
+</div>
+
+)}
+
+</div>
+
+</div>
+{reviewJob && (
+
+<div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+
+<div className="bg-white p-6 rounded-xl w-96 shadow-lg">
+
+<h3 className="text-lg font-semibold mb-4">
+Leave Review
+</h3>
+
+<select
+value={rating}
+onChange={(e)=>setRating(Number(e.target.value))}
+className="border p-2 w-full mb-3"
+>
+
+<option value={5}>5 ⭐</option>
+<option value={4}>4 ⭐</option>
+<option value={3}>3 ⭐</option>
+<option value={2}>2 ⭐</option>
+<option value={1}>1 ⭐</option>
+
+</select>
+
+<textarea
+placeholder="Write review..."
+value={comment}
+onChange={(e)=>setComment(e.target.value)}
+className="border p-2 w-full mb-4 rounded"
+/>
+
+<div className="flex justify-end gap-2">
+
+<button
+onClick={()=>setReviewJob(null)}
+className="border px-3 py-1 rounded"
+>
+Cancel
+</button>
+
+<button
+onClick={submitReview}
+className="bg-green-600 text-white px-3 py-1 rounded"
+>
+Submit
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+)}
+{reportJob && (
+
+<div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+
+<div className="bg-white p-6 rounded-xl w-96 shadow-lg">
+
+<h3 className="text-lg font-semibold mb-4">
+Report User
+</h3>
+
+<textarea
+placeholder="Describe the issue..."
+value={reportReason}
+onChange={(e)=>setReportReason(e.target.value)}
+className="border p-2 w-full mb-4 rounded"
+/>
+
+<div className="flex justify-end gap-2">
+
+<button
+onClick={()=>setReportJob(null)}
+className="border px-3 py-1 rounded"
+>
+Cancel
+</button>
+
+<button
+onClick={submitReport}
+className="bg-red-600 text-white px-3 py-1 rounded"
+>
+Submit
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+)}
+
+</div>
+
+)
+;
 }
