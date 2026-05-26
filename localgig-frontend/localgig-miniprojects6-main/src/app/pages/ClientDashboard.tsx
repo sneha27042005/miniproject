@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { LogOut, MapPin, Calendar, Shield, Home, Trash2, Search } from "lucide-react";
 import API from "../../api";
-import ClientMap from "../components/clientMap";
+import ClientMap from "../components/ClientMap";
 
 export function ClientDashboard() {
 
