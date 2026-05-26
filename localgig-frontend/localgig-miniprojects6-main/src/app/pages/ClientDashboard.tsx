@@ -247,7 +247,7 @@ setReviewStudent(student)
 
 const submitStudentReview = async()=>{
 
-await fetch(`http://localhost:5000/api/reviews`,{
+await fetch(`http://https://localgig-backend.onrender.com/api/reviews`,{
 method:"POST",
 headers:{
 "Content-Type":"application/json",
@@ -278,7 +278,7 @@ setReportStudent(student)
 
 const submitStudentReport = async()=>{
 
-await fetch(`http://localhost:5000/api/reports`,{
+await fetch(`http://https://localgig-backend.onrender.com/api/reports`,{
 method:"POST",
 headers:{
 "Content-Type":"application/json",
