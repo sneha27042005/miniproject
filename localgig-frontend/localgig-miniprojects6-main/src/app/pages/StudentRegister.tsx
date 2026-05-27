@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Mail, Lock, User, ArrowLeft, Loader2 } from "lucide-react";
 import { Users } from "lucide-react";
+import API from "../../api";
 
 export function StudentRegister() {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ export function StudentRegister() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("https://localgig-backend.onrender.com/api/users/register", {
+      const res = await fetch(`${API}/users/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Shield, Lock, Mail, Users, AlertCircle } from "lucide-react";
+import API from "../../api";
 
 export function AdminLogin() {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ export function AdminLogin() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("https://localgig-backend.onrender.com/api/users/login", {
+      const res = await fetch(`${API}/users/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
