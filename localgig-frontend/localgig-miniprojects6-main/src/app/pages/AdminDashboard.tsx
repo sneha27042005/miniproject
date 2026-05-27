@@ -14,7 +14,7 @@ const navigate = useNavigate();
 const token = localStorage.getItem("token");
 const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-const API = "https://localgig-backend.onrender.com/api/admin";
+const API = "https://localgig-backend.onrender.com/api";
 
 const [activeTab,setActiveTab] = useState<
 "overview"|"verification"|"users"|"reports"|"jobs"
