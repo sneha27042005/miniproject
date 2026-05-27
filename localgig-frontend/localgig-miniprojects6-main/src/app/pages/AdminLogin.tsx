@@ -15,7 +15,7 @@ export function AdminLogin() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("http://https://localgig-backend.onrender.com/api/users/login", {
+      const res = await fetch("https://localgig-backend.onrender.com/api/users/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
